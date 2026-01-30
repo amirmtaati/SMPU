@@ -1,4 +1,4 @@
-#include "SMPU.h"
+#include "SMPU.hpp"
 
 SMPU::SMPU(u8 address)
   : _address(address) {}
@@ -25,8 +25,25 @@ bool SMPU::readByte(u8 reg, u8& val) {
   return true;
 }
 
+bool SMPU::readBytes(u8 reg, u8* buffer, u8 len) {
+  Wire.beginTransmission(_address);
+  Wire.write(reg);
 
-bool SMPU::isConntected() {
+  if (Wire.endTransmission(false) != 0)
+    return false;
+
+  if (Wire.requestFrom((int)_address, (int)len) != len)
+    return false;
+
+  for (u8 i = 0; i < len; i++) {
+    buffer[i] = Wire.read();
+  }
+
+  return true;
+}
+
+
+bool SMPU::isConnected()() {
   u8 val;
   if (!readByte(MPU6050_REG_WHO_AM_I, val))
     return false;
@@ -34,11 +51,20 @@ bool SMPU::isConntected() {
   return (val == MPU6050_WHO_AM_I_VALUE);
 }
 
+bool SMPU::wakeUp() {
+  return writeByte(MPU6050_REG_PWR_MGMT_1, 0x00);
+}
+
 bool SMPU::begin() {
   Wire.begin();
 
-  if (!isConntected())
+  if (!isConnected())
     return false;
+
+  if (!wakeUp())
+    return false;
+
+  delay(100);
 
   return true;
 }

@@ -1,0 +1,104 @@
+#ifndef SMPU_H
+#define SMPU_H
+
+#include <Arduino.h>
+#include <Wire.h>
+
+struct RawData {
+  s16 accelX, accelY, accelZ;
+  s16 gyroX, gyroY, gyroZ;
+};
+
+struct ScaledData {
+  float accelX, accelY, accelZ;
+  float gyroX, gyroY, gyroZ;
+};
+
+typedef uint8_t   u8;
+typedef uint16_t unsigned16;
+typedef uint32_t u32;
+typedef int8_t    s8;
+typedef int16_t  s16;
+typedef int32_t  s32;
+
+#define MPU6050_ADDR_LOW          0x68
+#define MPU6050_ADDR_HIGH         0x69
+#define MPU6050_ADDRESS           0x68
+#define MPU6050_REG_PWR_MGMT_1    0x6B
+#define MPU6050_REG_WHO_AM_I      0x75
+#define MPU6050_REG_ACCEL_XOUT_H  0x3B
+#define MPU6050_REG_GYRO_XOUT_H   0x43
+#define MPU6050_REG_TEMP_OUT_H    0x41
+#define MPU6050_REG_CONFIG        0x1A
+#define MPU6050_REG_GYRO_CONFIG   0x1B
+#define MPU6050_REG_ACCEL_CONFIG  0x1C
+#define MPU6050_WHO_AM_I_VALUE    0x68
+
+#define MPU6050_ACCEL_RANGE_BIT_START  3
+#define MPU6050_ACCEL_RANGE_BIT_LENGTH 2
+#define MPU6050_GYRO_RANGE_BIT_START   3
+#define MPU6050_GYRO_RANGE_BIT_LENGTH  2
+#define MPU6050_PWR_SLEEP_BIT          6
+
+enum AccelRange {
+  ACCEL_RANGE_2G  = 0,
+  ACCEL_RANGE_4G  = 1,
+  ACCEL_RANGE_8G  = 2,
+  ACCEL_RANGE_16G = 3
+};
+
+enum GyroRange {
+  GYRO_RANGE_250  = 0,
+  GYRO_RANGE_500  = 1,
+  GYRO_RANGE_1000 = 2,
+  GYRO_RANGE_2000 = 3
+};
+
+inline u8 setBit(u8 val, u8 pos) {
+  return val | (1 << pos);
+}
+
+inline u8 clearBit(u8 val, u8 pos) {
+  return val & ~(1 << pos);
+}
+
+inline bool readBit(u8 val, u8 pos) {
+  return (val >> pos) & 1;
+}
+
+inline u8 readBits(u8 val, u8 start, u8 len) {
+  u8 mask = (1 << len) - 1;
+  return (val >> start) & mask;
+}
+
+inline u8 writeBits(u8 val, u8 start, u8 len, u8 data) {
+  u8 mask = ((1 << len) - 1) << start;
+  val &= ~mask;
+  val |= (data << start);
+  return val;
+}
+
+class SMPU {
+public:
+  SMPU(u8 address = MPU6050_ADDR_LOW);
+
+  bool begin();
+  bool isConnected();
+  bool wakeUp();
+  void setSleep(bool enable);
+  void setAccelRange();
+  void setGyroRange();
+  bool readRawData();
+ 
+  
+private:
+  u8 _address;
+  RawData _raw;
+  ScaledData _scaled;
+
+  bool writeByte(u8 reg, u8 val);
+  bool readByte(u8 reg, u8& val);
+  bool readBytes(u8 reg, u8* buffer, u8 len);
+};
+
+#endif
