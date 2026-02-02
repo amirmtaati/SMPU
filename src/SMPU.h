@@ -4,6 +4,13 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+typedef uint8_t   u8;
+//typedef uint16_t unsigned16;
+typedef uint32_t u32;
+typedef int8_t    s8;
+typedef int16_t  s16;
+typedef int32_t  s32;
+
 struct RawData {
   s16 accelX, accelY, accelZ;
   s16 gyroX, gyroY, gyroZ;
@@ -13,13 +20,6 @@ struct ScaledData {
   float accelX, accelY, accelZ;
   float gyroX, gyroY, gyroZ;
 };
-
-typedef uint8_t   u8;
-typedef uint16_t unsigned16;
-typedef uint32_t u32;
-typedef int8_t    s8;
-typedef int16_t  s16;
-typedef int32_t  s32;
 
 #define MPU6050_ADDR_LOW          0x68
 #define MPU6050_ADDR_HIGH         0x69
@@ -67,7 +67,7 @@ inline bool readBit(u8 val, u8 pos) {
 }
 
 inline u8 readBits(u8 val, u8 start, u8 len) {
-  u8 mask = (1 << len) - 1;
+  u8 mask = (1 << len) - 1
   return (val >> start) & mask;
 }
 
@@ -86,14 +86,16 @@ public:
   bool isConnected();
   bool wakeUp();
   void setSleep(bool enable);
-  void setAccelRange();
-  void setGyroRange();
+  void setAccelRange(AccelRange range);
+  void setGyroRange(GyroRange range);
+  bool readRawAccel();
+  bool readRawGyro();
   bool readRawData();
  
   
 private:
-  u8 _address;
-  RawData _raw;
+  u8         _address;
+  RawData    _raw;
   ScaledData _scaled;
 
   bool writeByte(u8 reg, u8 val);
