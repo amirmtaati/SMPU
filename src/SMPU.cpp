@@ -1,7 +1,8 @@
 #include "SMPU.h"
 
 SMPU::SMPU(u8 address)
-  : _address(address), _raw(0), _scaled(0) {}
+    : _address(address), _accelRange(0),
+      _gyroRange(0), _raw{}, _scaled{} {}
 
 bool SMPU::writeByte(u8 reg, u8 val) {
   Wire.beginTransmission(_address);
@@ -66,6 +67,9 @@ bool SMPU::begin() {
 
   delay(100);
 
+  setAccelRange(ACCEL_RANGE_2G);
+  setGyroRange(GYRO_RANGE_250);
+
   return true;
 }
 
@@ -120,25 +124,22 @@ bool SMPU::readRawGyro() {
 }
 
 bool SMPU::readRawData() {
-  if (!readRawAccel() || !readRawGyro())
+  u8 buffer[14];
+
+  if (!readBytes(MPU6050_REG_ACCEL_XOUT_H, buffer, (u8)14))
     return false;
 
-  return true;
-}
+  _raw.accelX = (buffer[0] << 8) | buffer[1];
+  _raw.accelY = (buffer[2] << 8) | buffer[3];
+  _raw.accelZ = (buffer[4] << 8) | buffer[5];
 
-float SMPU::getAccelScale() {
-    switch (_accelRange) {
-    case ACCEL_RANGE_2G:
-	return 16384;
-    case ACCEL_RANGE_4G:
-	return 8192;
-    case ACCEL_RANGE_8G:
-	return 4096;
-    case ACCEL_RANGE_16G:
-	return 2048;
-    default:
-	return 16384;
-    }
+  _raw.temp = (buffer[6] << 8)   | buffer[7];
+
+  _raw.gyroX = (buffer[8] << 8)  | buffer[9];
+  _raw.gyroY = (buffer[10] << 8) | buffer[11];
+  _raw.gyroZ = (buffer[12] << 8) | buffer[13];
+
+  return true;
 }
 
 bool SMPU::readData() {
@@ -149,24 +150,40 @@ bool SMPU::readData() {
   return true;
 }
 
+float SMPU::getAccelScale() {
+    switch (_accelRange) {
+    case ACCEL_RANGE_2G:
+	return 16384.0;
+    case ACCEL_RANGE_4G:
+	return 8192.0;
+    case ACCEL_RANGE_8G:
+	return 4096.0;
+    case ACCEL_RANGE_16G:
+	return 2048.0;
+    default:
+	return 16384.0;
+    }
+}
+
 float SMPU::getGyroScale() {
   switch (_gyroRange) {
   case GYRO_RANGE_250:
-      return 131;
+      return 131.0;
   case GYRO_RANGE_500:
-      return 65;
+      return 65.5;
   case GYRO_RANGE_1000:
-      return 32;
+      return 32.8;
   case GYRO_RANGE_2000:
-      return 16;
+      return 16.4;
   default:
-      return 131;
+      return 131.0;
   } 
 }
 
 void SMPU::convertToScaled() {
   convertAccelToScaled();
   convertGyroToScaled();
+  convertTempToScaled();
 }
 
 void SMPU::convertAccelToScaled() {
@@ -183,4 +200,8 @@ void SMPU::convertGyroToScaled() {
   _scaled.gyroX = _raw.gyroX / gyroScale;
   _scaled.gyroY = _raw.gyroY / gyroScale;
   _scaled.gyroZ = _raw.gyroZ / gyroScale;
+}
+
+void SMPU::convertTempToScaled() {
+    _scaled.temp = (_raw.temp / 340.0) + 36.53;
 }

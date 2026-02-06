@@ -14,11 +14,13 @@ typedef int32_t  s32;
 struct RawData {
   s16 accelX, accelY, accelZ;
   s16 gyroX, gyroY, gyroZ;
+  s16 temp;
 };
 
 struct ScaledData {
   float accelX, accelY, accelZ;
   float gyroX, gyroY, gyroZ;
+  float temp;
 };
 
 #define MPU6050_ADDR_LOW          0x68
@@ -93,25 +95,23 @@ public:
   bool readRawData();
   bool readData();
 
-  inline u8 getRawAccelX() { return _raw.accelX; }
-  inline u8 getRawAccelY() { return _raw.accelY; }
-  inline u8 getRawAccelZ() { return _raw.accelZ; }
-  inline u8 getRawGyroX()  { return _raw.gyroX; }
-  inline u8 getRawGyroY()  { return _raw.gyroY; }
-  inline u8 getRawGyroZ()  { return _raw.gyroZ; }
+  inline s16 getRawAccelX() { return _raw.accelX; }
+  inline s16 getRawAccelY() { return _raw.accelY; }
+  inline s16 getRawAccelZ() { return _raw.accelZ; }
+  inline s16 getRawGyroX()  { return _raw.gyroX;  }
+  inline s16 getRawGyroY()  { return _raw.gyroY;  }
+  inline s16 getRawGyroZ()  { return _raw.gyroZ;  }
+  inline s16 getRawTemp()   { return _raw.temp;   }
 
-  inline u8 getAccelX()    { return _scaled.accelX; }
-  inline u8 getAccelY()    { return _scaled.accelY; }
-  inline u8 getAccelZ()    { return _scaled.accelZ; }
+  inline float getAccelX()  { return _scaled.accelX; }
+  inline float getAccelY()  { return _scaled.accelY; }
+  inline float getAccelZ()  { return _scaled.accelZ; }
+  inline float getGyroX()   { return _scaled.gyroX;  }
+  inline float getGyroY()   { return _scaled.gyroY;  }
+  inline float getGyroZ()   { return _scaled.gyroZ;  }
+  inline float getTemp()    { return _scaled.temp;   }
 
-  inline u8 getGyroX()     { return _scaled.gyroX; }
-  inline u8 getGyroY()     { return _scaled.gyroY; }
-  inline u8 getGyroZ()     { return _scaled.gyroZ; }
-
-  float getAccelScale();
-  float getGyroScale();
-  void convertToScaled();
-   
+  
 private:
   u8         _address;
   u8         _accelRange;
@@ -122,8 +122,12 @@ private:
   bool writeByte(u8 reg, u8 val);
   bool readByte(u8 reg, u8& val);
   bool readBytes(u8 reg, u8* buffer, u8 len);
+  float getAccelScale();
+  float getGyroScale();
+  void convertToScaled();
   void convertAccelToScaled();
   void convertGyroToScaled();
+  void convertTempToScaled();
 };
 
 #endif
