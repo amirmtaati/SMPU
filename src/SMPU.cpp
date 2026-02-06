@@ -1,7 +1,7 @@
 #include "SMPU.h"
 
 SMPU::SMPU(u8 address)
-  : _address(address) {}
+  : _address(address), _raw(0), _scaled(0) {}
 
 bool SMPU::writeByte(u8 reg, u8 val) {
   Wire.beginTransmission(_address);
@@ -78,6 +78,7 @@ void SMPU::setAccelRange(AccelRange range) {
 			  MPU6050_ACCEL_RANGE_BIT_LENGTH,
 			  range);
 
+  _accelRange = range;
   writeByte(MPU6050_REG_ACCEL_CONFIG, configValue);
 }
 
@@ -90,6 +91,7 @@ void SMPU::setGyroRange(GyroRange range) {
 			  MPU6050_GYRO_RANGE_BIT_LENGTH,
 			  range);
 
+  _gyroRange = range;
   writeByte(MPU6050_REG_GYRO_CONFIG, configValue);
 }
 
@@ -105,7 +107,7 @@ bool SMPU::readRawAccel() {
   return true;
 }
 
-bool SMPU::readGyroAccel() {
+bool SMPU::readRawGyro() {
   u8 rawGyro[6];
   if (!readBytes(MPU6050_REG_GYRO_XOUT_H, rawGyro, (u8)6))
     return false;
@@ -115,4 +117,70 @@ bool SMPU::readGyroAccel() {
   _raw.gyroZ = (rawGyro[4] << 8) | rawGyro[5];
 
   return true;
+}
+
+bool SMPU::readRawData() {
+  if (!readRawAccel() || !readRawGyro())
+    return false;
+
+  return true;
+}
+
+float SMPU::getAccelScale() {
+    switch (_accelRange) {
+    case ACCEL_RANGE_2G:
+	return 16384;
+    case ACCEL_RANGE_4G:
+	return 8192;
+    case ACCEL_RANGE_8G:
+	return 4096;
+    case ACCEL_RANGE_16G:
+	return 2048;
+    default:
+	return 16384;
+    }
+}
+
+bool SMPU::readData() {
+  if (!readRawData())
+    return false;
+
+  convertToScaled();
+  return true;
+}
+
+float SMPU::getGyroScale() {
+  switch (_gyroRange) {
+  case GYRO_RANGE_250:
+      return 131;
+  case GYRO_RANGE_500:
+      return 65;
+  case GYRO_RANGE_1000:
+      return 32;
+  case GYRO_RANGE_2000:
+      return 16;
+  default:
+      return 131;
+  } 
+}
+
+void SMPU::convertToScaled() {
+  convertAccelToScaled();
+  convertGyroToScaled();
+}
+
+void SMPU::convertAccelToScaled() {
+    float accelScale = getAccelScale();
+
+    _scaled.accelX = _raw.accelX / accelScale;
+    _scaled.accelY = _raw.accelY / accelScale;
+    _scaled.accelZ = _raw.accelZ / accelScale;
+}
+
+void SMPU::convertGyroToScaled() {
+  float gyroScale = getGyroScale();
+
+  _scaled.gyroX = _raw.gyroX / gyroScale;
+  _scaled.gyroY = _raw.gyroY / gyroScale;
+  _scaled.gyroZ = _raw.gyroZ / gyroScale;
 }

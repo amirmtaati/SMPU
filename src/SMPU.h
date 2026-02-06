@@ -67,7 +67,7 @@ inline bool readBit(u8 val, u8 pos) {
 }
 
 inline u8 readBits(u8 val, u8 start, u8 len) {
-  u8 mask = (1 << len) - 1
+  u8 mask = (1 << len) - 1;
   return (val >> start) & mask;
 }
 
@@ -91,16 +91,39 @@ public:
   bool readRawAccel();
   bool readRawGyro();
   bool readRawData();
- 
-  
+  bool readData();
+
+  inline u8 getRawAccelX() { return _raw.accelX; }
+  inline u8 getRawAccelY() { return _raw.accelY; }
+  inline u8 getRawAccelZ() { return _raw.accelZ; }
+  inline u8 getRawGyroX()  { return _raw.gyroX; }
+  inline u8 getRawGyroY()  { return _raw.gyroY; }
+  inline u8 getRawGyroZ()  { return _raw.gyroZ; }
+
+  inline u8 getAccelX()    { return _scaled.accelX; }
+  inline u8 getAccelY()    { return _scaled.accelY; }
+  inline u8 getAccelZ()    { return _scaled.accelZ; }
+
+  inline u8 getGyroX()     { return _scaled.gyroX; }
+  inline u8 getGyroY()     { return _scaled.gyroY; }
+  inline u8 getGyroZ()     { return _scaled.gyroZ; }
+
+  float getAccelScale();
+  float getGyroScale();
+  void convertToScaled();
+   
 private:
   u8         _address;
+  u8         _accelRange;
+  u8         _gyroRange;
   RawData    _raw;
   ScaledData _scaled;
 
   bool writeByte(u8 reg, u8 val);
   bool readByte(u8 reg, u8& val);
   bool readBytes(u8 reg, u8* buffer, u8 len);
+  void convertAccelToScaled();
+  void convertGyroToScaled();
 };
 
 #endif
