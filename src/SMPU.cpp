@@ -139,6 +139,14 @@ bool SMPU::readRawData() {
   _raw.gyroY = (buffer[10] << 8) | buffer[11];
   _raw.gyroZ = (buffer[12] << 8) | buffer[13];
 
+  _raw.accelX -= _offset.accelX;
+  _raw.accelY -= _offset.accelY;
+  _raw.accelZ -= _offset.accelZ;
+
+  _raw.gyroX  -= _offset.gyroX;
+  _raw.gyroY  -= _offset.gyroY;
+  _raw.gyroZ  -= _offset.gyroZ;
+
   return true;
 }
 
@@ -207,8 +215,8 @@ void SMPU::convertTempToScaled() {
 }
 
 bool SMPU::setOffset() {
-  s16 accelX_sum, accelY_sum, accelZ_sum = 0;
-  s16 gyroX_sum, gyroY_sum, gyroZ_sum = 0;
+  s16 accelX_sum = 0, accelY_sum = 0, accelZ_sum = 0;
+  s16 gyroX_sum = 0, gyroY_sum = 0, gyroZ_sum = 0;
 
   for (int i = 0; i < _sampleSize; i++) {
     if (!readRawData())
@@ -220,33 +228,22 @@ bool SMPU::setOffset() {
 
     gyroX_sum  += _raw.gyroX; 
     gyroY_sum  += _raw.gyroY; 
-    gyroZ_sum  += _raw.gyroZ; 
+    gyroZ_sum  += _raw.gyroZ;
+
+    delay(2);
   }
 
-  _offset.accelX = (float)accelX_sum / (float)_sampleSize;
-  _offset.accelY = (float)accelY_sum / (float)_sampleSize;
-  _offset.accelZ = (float)accelZ_sum / (float)_sampleSize;
+  _offset.accelX = accelX_sum / _sampleSize;
+  _offset.accelY = accelY_sum / _sampleSize;
+  _offset.accelZ = (accelZ_sum / _sampleSize) - getAccelScale();
 
-  _offset.gyroX  = (float)gyroX_sum / (float)_sampleSize;
-  _offset.gyroY  = (float)gyroY_sum / (float)_sampleSize;
-  _offset.gyroZ  = (float)gyroZ_sum / (float)_sampleSize;
+  _offset.gyroX  = gyroX_sum / _sampleSize;
+  _offset.gyroY  = gyroY_sum / _sampleSize;
+  _offset.gyroZ  = gyroZ_sum / _sampleSize;
     
   return true;
 }
 
 bool SMPU::calibrate() {
-  if (!setOffset())
-      return false;
-
-  _raw.accelX -= _offset.accelX;
-  _raw.accelY -= _offset.accelY;
-  _raw.accelZ -= _offset.accelZ;
-
-  _raw.gyroX  -= _offset.gyroX;
-  _raw.gyroY  -= _offset.gyroY;
-  _raw.gyroZ  -= _offset.gyroZ;
-
-  convertToScaled();
-
-  return true;
+    return setOffset();
 }
