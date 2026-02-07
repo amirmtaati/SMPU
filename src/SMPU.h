@@ -5,7 +5,6 @@
 #include <Wire.h>
 
 typedef uint8_t   u8;
-//typedef uint16_t unsigned16;
 typedef uint32_t u32;
 typedef int8_t    s8;
 typedef int16_t  s16;
@@ -23,9 +22,14 @@ struct ScaledData {
   float temp;
 };
 
+struct Offset {
+  float accelX, accelY, accelZ;
+  float gyroX, gyroY, gyroZ;
+  float temp;
+};
+
 #define MPU6050_ADDR_LOW          0x68
 #define MPU6050_ADDR_HIGH         0x69
-#define MPU6050_ADDRESS           0x68
 #define MPU6050_REG_PWR_MGMT_1    0x6B
 #define MPU6050_REG_WHO_AM_I      0x75
 #define MPU6050_REG_ACCEL_XOUT_H  0x3B
@@ -87,7 +91,6 @@ public:
   bool begin();
   bool isConnected();
   bool wakeUp();
-  void setSleep(bool enable);
   void setAccelRange(AccelRange range);
   void setGyroRange(GyroRange range);
   bool readRawAccel();
@@ -111,17 +114,21 @@ public:
   inline float getGyroZ()   { return _scaled.gyroZ;  }
   inline float getTemp()    { return _scaled.temp;   }
 
+  bool calibrate();
   
 private:
   u8         _address;
   u8         _accelRange;
   u8         _gyroRange;
+  s16        _sampleSize;
   RawData    _raw;
   ScaledData _scaled;
+  Offset     _offset;
 
   bool writeByte(u8 reg, u8 val);
   bool readByte(u8 reg, u8& val);
   bool readBytes(u8 reg, u8* buffer, u8 len);
+  bool setOffset();
   float getAccelScale();
   float getGyroScale();
   void convertToScaled();

@@ -1,8 +1,8 @@
 #include "SMPU.h"
 
 SMPU::SMPU(u8 address)
-    : _address(address), _accelRange(0),
-      _gyroRange(0), _raw{}, _scaled{} {}
+    : _address(address), _accelRange(0), _gyroRange(0), _sampleSize(500),
+      _raw{}, _scaled{}, _offset{} {}
 
 bool SMPU::writeByte(u8 reg, u8 val) {
   Wire.beginTransmission(_address);
@@ -204,4 +204,49 @@ void SMPU::convertGyroToScaled() {
 
 void SMPU::convertTempToScaled() {
     _scaled.temp = (_raw.temp / 340.0) + 36.53;
+}
+
+bool SMPU::setOffset() {
+  s16 accelX_sum, accelY_sum, accelZ_sum = 0;
+  s16 gyroX_sum, gyroY_sum, gyroZ_sum = 0;
+
+  for (int i = 0; i < _sampleSize; i++) {
+    if (!readRawData())
+	return false;
+
+    accelX_sum += _raw.accelX;
+    accelY_sum += _raw.accelY;
+    accelZ_sum += _raw.accelZ;
+
+    gyroX_sum  += _raw.gyroX; 
+    gyroY_sum  += _raw.gyroY; 
+    gyroZ_sum  += _raw.gyroZ; 
+  }
+
+  _offset.accelX = (float)accelX_sum / (float)_sampleSize;
+  _offset.accelY = (float)accelY_sum / (float)_sampleSize;
+  _offset.accelZ = (float)accelZ_sum / (float)_sampleSize;
+
+  _offset.gyroX  = (float)gyroX_sum / (float)_sampleSize;
+  _offset.gyroY  = (float)gyroY_sum / (float)_sampleSize;
+  _offset.gyroZ  = (float)gyroZ_sum / (float)_sampleSize;
+    
+  return true;
+}
+
+bool SMPU::calibrate() {
+  if (!setOffset())
+      return false;
+
+  _raw.accelX -= _offset.accelX;
+  _raw.accelY -= _offset.accelY;
+  _raw.accelZ -= _offset.accelZ;
+
+  _raw.gyroX  -= _offset.gyroX;
+  _raw.gyroY  -= _offset.gyroY;
+  _raw.gyroZ  -= _offset.gyroZ;
+
+  convertToScaled();
+
+  return true;
 }
